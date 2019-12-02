@@ -48,17 +48,26 @@ public final class EchoServer {
             sslCtx = null;
         }
 
-        // Configure the server.
+        /**
+         * Configure the server. bossGroup会接收请求，然后转交给workGroup,workGroup会获取到真正的连接，然后
+         * 和连接进行通讯，比如读写编解码等操作
+         */
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         EventLoopGroup workerGroup = new NioEventLoopGroup();
+        /**
+         * 业务处理器线程类
+         */
         final EchoServerHandler serverHandler = new EchoServerHandler();
         try {
+            /**
+             * ServerBootstrap 对象，他是一个引导类，用于启动服务器和引导整个程序的初始化
+             */
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
-             .channel(NioServerSocketChannel.class)
-             .option(ChannelOption.SO_BACKLOG, 100)
-             .handler(new LoggingHandler(LogLevel.INFO))
-             .childHandler(new ChannelInitializer<SocketChannel>() {
+             .channel(NioServerSocketChannel.class)//建会通过反射创建传入类的实例
+             .option(ChannelOption.SO_BACKLOG, 100)//tcp参数设置
+             .handler(new LoggingHandler(LogLevel.INFO))//日志设置
+             .childHandler(new ChannelInitializer<SocketChannel>() {//所有的客户端连接都见通过此处理器
                  @Override
                  public void initChannel(SocketChannel ch) throws Exception {
                      ChannelPipeline p = ch.pipeline();
@@ -66,7 +75,7 @@ public final class EchoServer {
                          p.addLast(sslCtx.newHandler(ch.alloc()));
                      }
                      //p.addLast(new LoggingHandler(LogLevel.INFO));
-                     p.addLast(serverHandler);
+                     p.addLast(serverHandler);//设置自定义处理器
                  }
              });
 
